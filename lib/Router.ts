@@ -11,6 +11,7 @@ export class Router {
     events = new $EventManager<RouterEventMap>().register('notfound', 'load');
     basePath: string;
     static currentPath: URL = new URL(location.href);
+    static readonly SCROLL_HISTORY_KEY = '$router_scroll_history';
     constructor(basePath: string, view?: $View) {
         this.basePath = basePath;
         this.$view = view ?? new $View();
@@ -50,6 +51,7 @@ export class Router {
         history.pushState(routeData, '', url);
         Router.currentPath = new URL(location.href);
         $.routers.forEach(router => router.resolvePath())
+        Router.recoveryScrollPosition();
         Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Forward'});
         return this;
     }
@@ -91,6 +93,7 @@ export class Router {
         const prevPath = Router.currentPath;
         Router.index = history.state.index;
         this.resolvePath();
+        Router.recoveryScrollPosition();
         Router.currentPath = new URL(location.href);
         Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Forward'});
     }).bind(this)
@@ -170,6 +173,48 @@ export class Router {
         }
     }
 
+    static recoveryScrollPosition() {
+        const history = this.getScrollHistory(this.index, location.href);
+        if (!history) {
+            document.documentElement.scrollTop = 0;
+            this.setScrollHistory(this.index, location.href, 0);
+        }
+        else document.documentElement.scrollTop = history.scroll;
+    }
+
+    static getScrollHistory(pageIndex: number, href: string) {
+        const data = this.scrollHistoryData;
+        if (!data || !data[pageIndex]) return null;
+        return data[pageIndex].href === href ? data[pageIndex] : null;
+    }
+
+    static setScrollHistory(pageIndex: number, href: string, scroll: number) {
+        let history = this.scrollHistoryData;
+        if (!history) {
+            history = {[pageIndex]: {href, scroll}};
+            sessionStorage.setItem(this.SCROLL_HISTORY_KEY, JSON.stringify(history));
+        }
+        else {
+            const data = history[pageIndex];
+            if (data && data.href !== href) {
+                let i = 0;
+                while (history[pageIndex + i]) {
+                    delete history[pageIndex + i];
+                    i++;
+                }
+            }
+            history[pageIndex] = {href, scroll}
+            sessionStorage.setItem(this.SCROLL_HISTORY_KEY, JSON.stringify(history));
+        }
+        return history[pageIndex];
+    }
+
+    static get scrollHistoryData() {
+        const json = sessionStorage.getItem(this.SCROLL_HISTORY_KEY)
+        if (!json) return null;
+        return JSON.parse(json) as {[key: number]: RouteScrollHistoryData};
+    }
+
     static on<K extends keyof RouterGlobalEventMap>(type: K, callback: (...args: RouterGlobalEventMap[K]) => any) { this.events.on(type, callback); return this }
     static off<K extends keyof RouterGlobalEventMap>(type: K, callback: (...args: RouterGlobalEventMap[K]) => any) { this.events.off(type, callback); return this }
     static once<K extends keyof RouterGlobalEventMap>(type: K, callback: (...args: RouterGlobalEventMap[K]) => any) { this.events.once(type, callback); return this }
@@ -188,3 +233,12 @@ type RouteData = {
     index: number;
     data: {[key: string]: any};
 }
+
+type RouteScrollHistoryData = {
+    href: string;
+    scroll: number;
+}
+
+window.addEventListener('scroll', () => {
+    Router.setScrollHistory(Router.index, location.href, document.documentElement.scrollTop);
+})
