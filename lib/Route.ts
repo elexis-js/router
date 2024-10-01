@@ -17,7 +17,7 @@ type PathParams<Path> = Path extends `${infer Segment}/${infer Rest}`
 export type PathResolverFn = (path: string) => undefined | string;
 
 type PathParamResolver<P extends PathResolverFn | string> = P extends PathResolverFn
-? undefined : PathParams<P>
+    ? undefined : PathParams<P>
 
 // type PathResolverRecord<P extends PathResolverFn> = {
 //     [key in keyof ReturnType<P>]: ReturnType<P>[key]

@@ -3,15 +3,18 @@ import { $Util } from "elexis/lib/$Util";
 import { PathResolverFn, Route, RouteRecord } from "./Route";
 export interface Router extends $EventMethod<RouterEventMap> {};
 export class Router {
+    static routers = new Set<Router>();
+    static index: number = 0;
+    static events = new $EventManager<RouterGlobalEventMap>().register('pathchange', 'notfound', 'load');
+    static currentPath: URL = new URL(location.href);
+    static navigationDirection: NavigationDirection;
+    static readonly SCROLL_HISTORY_KEY = '$router_scroll_history';
+    static preventSetScrollHistory = false;
     routeMap = new Map<string | PathResolverFn, Route<any>>();
     recordMap = new Map<string, RouteRecord>();
     $view: $View;
-    static index: number = 0;
-    static events = new $EventManager<RouterGlobalEventMap>().register('pathchange', 'notfound', 'load');
     events = new $EventManager<RouterEventMap>().register('notfound', 'load');
     basePath: string;
-    static currentPath: URL = new URL(location.href);
-    static readonly SCROLL_HISTORY_KEY = '$router_scroll_history';
     constructor(basePath: string, view?: $View) {
         this.basePath = basePath;
         this.$view = view ?? new $View();
@@ -32,10 +35,10 @@ export class Router {
         } else {
             Router.index = history.state.index
         }
-        addEventListener('popstate', this.popstate)
-        $.routers.add(this);
+        Router.routers.add(this);
+        Router.navigationDirection = NavigationDirection.Forward;
         this.resolvePath();
-        Router.events.fire('pathchange', {prevURL: undefined, nextURL: Router.currentPath, navigation: 'Forward'});
+        Router.events.fire('pathchange', {prevURL: undefined, nextURL: Router.currentPath, navigation: NavigationDirection.Forward});
         return this;
     }
 
@@ -49,10 +52,10 @@ export class Router {
         this.index += 1;
         const routeData: RouteData = { index: this.index, data: {} };
         history.pushState(routeData, '', url);
+        Router.navigationDirection = NavigationDirection.Forward;
         Router.currentPath = new URL(location.href);
-        $.routers.forEach(router => router.resolvePath())
-        Router.recoveryScrollPosition();
-        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Forward'});
+        Router.routers.forEach(router => router.resolvePath())
+        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: NavigationDirection.Forward});
         return this;
     }
 
@@ -61,7 +64,8 @@ export class Router {
         const prevPath = Router.currentPath;
         history.back(); 
         Router.currentPath = new URL(location.href);
-        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Back'});
+        Router.navigationDirection = NavigationDirection.Back;
+        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: NavigationDirection.Back});
         return this 
     }
 
@@ -74,8 +78,9 @@ export class Router {
         const prevPath = Router.currentPath;
         history.replaceState({index: Router.index}, '', url)
         Router.currentPath = new URL(location.href);
-        $.routers.forEach(router => router.resolvePath(url.pathname));
-        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Forward'});
+        Router.navigationDirection = NavigationDirection.Forward;
+        Router.routers.forEach(router => router.resolvePath(url.pathname));
+        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: NavigationDirection.Forward});
         return this;
     }
 
@@ -85,34 +90,42 @@ export class Router {
         return this;
     }
 
-    private popstate = (() => {
+    static popstate = (() => {
+        let dir: NavigationDirection = NavigationDirection.Forward;
         // Forward
-        if (history.state.index > Router.index) { }
+        if (history.state.index > Router.index) dir = NavigationDirection.Forward;
         // Back
-        else if (history.state.index < Router.index) {  }
+        else if (history.state.index < Router.index) dir = NavigationDirection.Back;
         const prevPath = Router.currentPath;
         Router.index = history.state.index;
-        this.resolvePath();
-        Router.recoveryScrollPosition();
+        Router.navigationDirection = dir;
+        Router.routers.forEach(router => router.resolvePath());
         Router.currentPath = new URL(location.href);
-        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: 'Forward'});
-    }).bind(this)
+        Router.events.fire('pathchange', {prevURL: prevPath, nextURL: Router.currentPath, navigation: dir});
+    })
 
     private resolvePath(path = location.pathname) {
         if (!path.startsWith(this.basePath)) return;
         path = path.replace(this.basePath, '/').replace('//', '/');
         let found = false;
-        const openCached = (pathId: string) => {
+        const openCachedView = (pathId: string) => {
             const record = this.recordMap.get(pathId);
             if (record) {
                 found = true;
-                if (record.content && !this.$view.contains(record.content)) this.$view.switchView(pathId);
+                if (record.content && !this.$view.contains(record.content)) {
+                    Router.preventSetScrollHistory = true;
+                    this.$view.events.once('afterSwitch', () => {
+                        Router.preventSetScrollHistory = false;
+                        Router.recoveryScrollPosition()
+                    });
+                    this.$view.switchView(pathId);
+                } 
                 record.events.fire('open', {path, record});
                 return true;
             }
             return false;
         }
-        const create = (pathId: string, route: Route<any>, data: any) => {
+        const createView = (pathId: string, route: Route<any>, data: any) => {
             const record = new RouteRecord(pathId);
             let content = route.builder({
                 params: data, 
@@ -122,11 +135,18 @@ export class Router {
                     this.events.fire('load', {path: pathId});
                 }
             });
-            if (typeof content === 'string') content = new $Text(content);
+            if (typeof content === 'string') return new $Text(content);
             if (content === undefined) return;
             (record as Mutable<RouteRecord>).content = content;
             this.recordMap.set(pathId, record);
+            // switch view
+            Router.preventSetScrollHistory = true;
+            this.$view.events.once('afterSwitch', () => {
+                Router.preventSetScrollHistory = false;
+                Router.recoveryScrollPosition()
+            });
             this.$view.setView(pathId, content).switchView(pathId);
+            //
             record.events.fire('open', {path, record});
             found = true;
         }
@@ -134,7 +154,7 @@ export class Router {
             // PathResolverFn
             if (pathResolver instanceof Function) {
                 const routeId = pathResolver(path)
-                if (routeId) { if (!openCached(routeId)) create(routeId, route, undefined) }
+                if (routeId) { if (!openCachedView(routeId)) createView(routeId, route, undefined) }
                 continue;
             }
             // string
@@ -148,7 +168,7 @@ export class Router {
                 if (routePart === pathPart) {
                     pathString += pathPart;
                     if (routePart === _routeParts.at(-1)) {
-                        if (!openCached(pathString)) create(pathString, route, data);
+                        if (!openCachedView(pathString)) createView(pathString, route, data);
                         return;
                     }
                 }
@@ -158,7 +178,7 @@ export class Router {
                     Object.assign(data, {[param]: pathPart.replace(prefix, '')})
                     pathString += pathPart;
                     if (routePart === _routeParts.at(-1)) {
-                        if (!openCached(pathString)) create(pathString, route, data);
+                        if (!openCachedView(pathString)) createView(pathString, route, data);
                         return;
                     }
                 }
@@ -189,6 +209,7 @@ export class Router {
     }
 
     static setScrollHistory(pageIndex: number, href: string, scroll: number) {
+        if (Router.preventSetScrollHistory) return;
         let history = this.scrollHistoryData;
         if (!history) {
             history = {[pageIndex]: {href, scroll}};
@@ -219,14 +240,16 @@ export class Router {
     static off<K extends keyof RouterGlobalEventMap>(type: K, callback: (...args: RouterGlobalEventMap[K]) => any) { this.events.off(type, callback); return this }
     static once<K extends keyof RouterGlobalEventMap>(type: K, callback: (...args: RouterGlobalEventMap[K]) => any) { this.events.once(type, callback); return this }
 }
+
 $Util.mixin(Router, $EventMethod);
+
 interface RouterEventMap {
     notfound: [{path: string, preventDefault: () => any}];
     load: [{path: string}];
 }
 
 interface RouterGlobalEventMap {
-    pathchange: [{prevURL?: URL, nextURL: URL, navigation: 'Back' | 'Forward'}];
+    pathchange: [{prevURL?: URL, nextURL: URL, navigation: NavigationDirection}];
 }
 
 type RouteData = {
@@ -239,6 +262,13 @@ type RouteScrollHistoryData = {
     scroll: number;
 }
 
-window.addEventListener('scroll', () => {
+export enum NavigationDirection {
+    Forward,
+    Back
+}
+
+window.addEventListener('scroll', (e) => {
+    console.debug(document.documentElement.scrollTop)
     Router.setScrollHistory(Router.index, location.href, document.documentElement.scrollTop);
 })
+history.scrollRestoration = 'manual';

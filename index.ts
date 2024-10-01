@@ -10,11 +10,13 @@ declare module 'elexis' {
 }
 
 Object.assign($, {
-    routers: new Set<Router>,
+    routers: Router.routers,
     open(path: string | URL | undefined) { return Router.open(path) },
     replace(path: string | URL | undefined) { return Router.replace(path) },
     back() { return Router.back() }
 })
+
+addEventListener('popstate', Router.popstate); // Start listening
 
 export * from './lib/Route';
 export * from './lib/Router';
