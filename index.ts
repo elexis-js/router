@@ -1,22 +1,25 @@
 import 'elexis';
-import { Router } from './lib/Router';
+import { $Router } from './lib/$Router';
+import { $Route } from './lib/$Route';
 declare module 'elexis' {
     export namespace $ {
-        export const routers: Set<Router>;
-        export function open(path: string | URL | undefined): typeof Router;
-        export function replace(path: string | URL | undefined): typeof Router;
-        export function back(): typeof Router;
+        export interface TagNameElementMap {
+            'router': typeof $Router;
+            'route': typeof $Route;
+        } 
+        export function open(path: string | URL | undefined): typeof $Router;
+        export function replace(path: string | URL | undefined): typeof $Router;
+        export function back(): typeof $Router;
     }
 }
+$.registerTagName('router', $Router);
+$.registerTagName('route', $Route);
 
 Object.assign($, {
-    routers: Router.routers,
-    open(path: string | URL | undefined) { return Router.open(path) },
-    replace(path: string | URL | undefined) { return Router.replace(path) },
-    back() { return Router.back() }
+    open(path: string | URL | undefined) { return $Router.open(path) },
+    replace(path: string | URL | undefined) { return $Router.replace(path) },
+    back() { return $Router.back() }
 })
 
-addEventListener('popstate', Router.popstate); // Start listening
-
-export * from './lib/Route';
-export * from './lib/Router';
+export * from './lib/$Route';
+export * from './lib/$Router';
