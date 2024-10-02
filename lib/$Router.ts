@@ -166,7 +166,6 @@ export class $Router extends $View {
     }
 
     protected static clearForwardScrollHistory() {
-        console.debug(true)
         const record = this.getScrollHistory();
         if (record) for (const i in record) {
             if (Number(i) > this.historyIndex) delete record[i];
