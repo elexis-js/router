@@ -1,5 +1,5 @@
 # @elexis/router
-一个基于 ElexisJS 的布局网页路由工具。
+一个基于 [ElexisJS](https://git.defaultkavy.com/defaultkavy/elexis) 的布局网页路由工具。
 
 ## 初步认识 $Router 以及 $Route
 这个工具基于两个基本的概念模块来构建：解析模块以及蓝图模块。我们先来看看如何利用此工具实现一个简单的网页路径布局：
@@ -106,3 +106,29 @@ $(document.body).content([
 ```ts
 $('route').path(['/', '/intro']).builder(() => $('h1').content('Intro'));
 ```
+
+## 页面切换流程事件
+`$Router` 是 `$View` 插件的拓展，并遵循该插件切换内容的流程设计。
+1. `beforeSwitch`：在把内容替换为目标内容之前会触发此事件，开发者可以透过此事件直接控制内容的切换过程。
+2. `rendered`：当目标内容被置入 DOM 之后会触发此事件，页面滚动记录恢复将会被触发。
+3. `afterSwitch`：在整个切换过程结束后会触发此事件。
+
+以下是接管切换流程的例子：
+```ts
+$('router').base('/')
+    .self($router => $router.events.on((event) => {
+        event.preventDefault(); // 运行此函数将会关闭 $Router 切换内容的预设行为
+        $router.content(event.nextContent); // 将内容替换为目标内容
+        event.rendered(); // 在替换内容后，运行此函数触发页面滚动记录恢复以及所有 'rendered' 事件
+        event.switch(); // 在所有切换流程结束后，运行此函数触发所有 'afterSwitch' 事件
+    }))
+    .map([...])
+```
+根据这套流程，你可以设计出特殊的动画转场效果，并且能确保页面滚动记录恢复的正常运作。
+
+## 页面滚轴记录恢复
+`$Router` 只记录 `document.documentElement` 的滚轴历史，并且遵循以下规则：
+1. 每个页面渲染后将会创建记录。
+2. 返回或往前页面不会删除记录。
+3. 透过 `$Router.open()` 打开页面时，将会删除历史中包括此页面以及所有往后页面的记录。
+> 一旦导入此插件，`window.history.scrollRestoration = 'manual'` 将会自动被设定，透过关闭浏览器预设的滚动恢复功能，能让此插件做到更加进阶的滚动控制。

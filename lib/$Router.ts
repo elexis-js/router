@@ -99,9 +99,10 @@ export class $Router extends $View {
         if (url === undefined) return this;
         url = new URL(url);
         if (url.href === this.url.href) return this;
-        this.historyIndex++;
+        $Router.clearForwardScrollHistory();
+        $Router.historyIndex++;
         history.pushState($Router.historyState, '', url);
-        this.stateChange($RouterNavigationDirection.Forward);
+        $Router.stateChange($RouterNavigationDirection.Forward);
         $Router.resolve();
         return this;
     }
@@ -138,6 +139,7 @@ export class $Router extends $View {
     protected static async resolve() {
         await Promise.all([...$Router.routers.values()].map($router => $router.resolve()));
         this.scrollRestoration();
+        this.setScrollHistory(this.historyIndex, location.href, document.documentElement.scrollTop);
     }
 
     protected static get historyState() { return { index: $Router.historyIndex, } }
@@ -163,10 +165,24 @@ export class $Router extends $View {
         else return JSON.parse(data) as $RouterScrollHistoryData;
     }
 
+    protected static clearForwardScrollHistory() {
+        console.debug(true)
+        const record = this.getScrollHistory();
+        if (record) for (const i in record) {
+            if (Number(i) > this.historyIndex) delete record[i];
+            sessionStorage.setItem(this.scrollHistoryKey, JSON.stringify(record));
+        }
+    }
+
     protected static scrollRestoration() {
         const record = this.getScrollHistory();
-        if (!record) return;
-        document.documentElement.scrollTop = record[this.historyIndex]?.value ?? 0;
+        if (record && record[this.historyIndex]) document.documentElement.scrollTop = record[this.historyIndex].value ?? 0;
+        else if (location.hash.length) {
+            const $target = $(document.body).$(location.hash);
+            if ($target) document.documentElement.scrollTop = $target.dom.offsetTop;
+        } else {
+            document.documentElement.scrollTop = 0;
+        }
     }
 }
 
