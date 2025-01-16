@@ -1,7 +1,7 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",
@@ -9,18 +9,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://git.defaultkavy.com/elexis/router.git"
+    "url": "git+https://github.com/elexis-js/router.git"
   },
   "module": "index.ts",
   "bugs": {
-    "url": "https://git.defaultkavy.com/elexis/router/issues"
+    "url": "https://github.com/elexis-js/router/issues"
   },
-  "homepage": "https://git.defaultkavy.com/elexis/router",
+  "homepage": "https://github.com/elexis-js/router",
   "keywords": ["router", "web", "front-end", "lib", "fluent", "framework"],
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@elexis/view": "../view",
-    "elexis": "../../elexis"
+    "@elexis.js/view": "^0.1.0",
+    "elexis": "^0.3.1"
   }
 }
