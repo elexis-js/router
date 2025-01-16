@@ -1,5 +1,5 @@
 {
-  "name": "@elexis/router",
+  "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
   "version": "0.2.1",
   "author": {
