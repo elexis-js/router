@@ -1,7 +1,7 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",
@@ -20,7 +20,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@elexis.js/view": "^0.1.0",
+    "@elexis.js/view": "^0.2.0",
     "elexis": "^0.3.1"
   }
 }
