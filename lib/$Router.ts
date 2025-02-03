@@ -1,9 +1,10 @@
 import { $AnchorTarget, $EventManager } from "elexis";
 import { $Route, $RoutePathType } from "./$Route";
 import { $View, $ViewEventMap, $ViewOptions } from "@elexis.js/view";
+import { $Page } from "./$Page";
 
 export interface $RouterOptions extends $ViewOptions {}
-export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View<$Route, EM> {
+export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View<$Page, EM> {
     #base: string = '';
     routes = new Map<$RoutePathType, $Route>();
     static routers = new Set<$Router>();
@@ -79,19 +80,19 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
             const {$route, params, pathId, query} = $routeData;
             if ($route.static() && pathId === this.contentId) return resolve($RouterResolveResult.OK); // current route
             this.events.once('rendered', ({nextContent, previousContent}) => {
-                previousContent?.events.fire('afterShift', {$route: previousContent});
-                nextContent.events.fire('rendered', {$route: nextContent, params, query});
+                previousContent?.events.fire('afterShift', {$page: previousContent});
+                nextContent.events.fire('rendered', {$page: nextContent, params, query});
                 resolve($RouterResolveResult.OK);
             });
-            const $buildedRoute = this.viewCache.get(pathId) as $Route ?? $route.build({params, query});
-            if (!this.viewCache.has(pathId)) { this.setView(pathId, $buildedRoute); }
+            const $page = this.viewCache.get(pathId) as $Page ?? $route.build({params, query});
+            if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
             this.events.once('beforeSwitch', () => {
-                $buildedRoute.events.fire('beforeShift', {$route: $buildedRoute});
-                this.currentContent?.events.fire('beforeShift', {$route: this.currentContent});
+                $page.events.fire('beforeShift', {$page});
+                this.currentContent?.events.fire('beforeShift', {$page: this.currentContent});
             })
-            this.events.once('afterSwitch', () => $buildedRoute.events.fire('afterShift', {$route: $buildedRoute}));
-            this.currentContent?.events.fire('close', {$route: this.currentContent});
-            $buildedRoute.events.fire('open', {$route: $buildedRoute, params, query});
+            this.events.once('afterSwitch', () => $page.events.fire('afterShift', {$page}));
+            this.currentContent?.events.fire('close', {$page: this.currentContent});
+            $page.events.fire('open', {$page: $page, params, query});
             this.switchView(pathId);
         })
     }
@@ -222,7 +223,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
 enum $RouterResolveResult { OK, NotFound, NotMatchBase }
 export enum $RouterNavigationDirection { Forward, Back, Replace }
 interface $RouterState { index: number }
-export interface $RouterEventMap extends $ViewEventMap<$Route> {
+export interface $RouterEventMap extends $ViewEventMap<$Page> {
     'stateChange': [{beforeURL: URL, afterURL: URL, direction: $RouterNavigationDirection}]
 }
 interface $RouterScrollHistoryData {[index: number]: {url: string, value: number}}

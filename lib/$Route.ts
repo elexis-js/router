@@ -1,9 +1,10 @@
-import { $Container, $ContainerContentType, $ContainerEventMap, $ContainerOptions, $EventManager } from "elexis";
+import { $Container, $ContainerOptions } from "elexis";
+import { $Page } from "./$Page";
 
 export interface $RouteOptions extends $ContainerOptions {}
-export class $Route<Path extends null | $RoutePathType = null, Params = any, Query = any, EM extends $RouteEventMap = $RouteEventMap<Path, Params, Query>> extends $Container<HTMLElement, EM> {
+export class $Route<Path extends null | $RoutePathType = null, Params = any, Query = any> extends $Container<HTMLElement> {
     #path: $RoutePathType = '';
-    #builder?: (record: $RouteRecord<Path, Params, Query>) => OrMatrix<$ContainerContentType>;
+    #builder?: $RouteBuilder<this, Path, Params, Query>;
     readonly rendered: boolean = false;
     constructor(options?: $RouteOptions) {
         super('route', options);
@@ -18,40 +19,28 @@ export class $Route<Path extends null | $RoutePathType = null, Params = any, Que
     static(boolean: boolean): this;
     static(boolean?: boolean) { return $.fluent(this, arguments, () => this.__$property__.static, () => $.set(this.__$property__, 'static', boolean)) }
 
-    builder(builder: (record: $RouteRecord<Path, Params, Query>) => OrMatrix<$ContainerContentType>) {
+    builder(): $RouteBuilder<this, Path, Params, Query> | undefined;
+    builder(builder?: $RouteBuilder<this, Path, Params, Query>): this;
+    builder(builder?: $RouteBuilder<this, Path, Params, Query>) {
+        if (!arguments.length) return this.#builder;
         this.#builder = builder;
         return this;
     }
 
-    render(options: {params: Params, query: Query}) {
-        if (this.#builder) this.content(this.#builder({
-            $route: this,
-            params: options.params,
-            query: options.query
-        }));
-        (this as Mutable<$Route>).rendered = true;
-        return this;
-    }
-
     build(options: {params: Params, query: Query}) {
-        return new $Route({dom: this.dom.cloneNode() as HTMLElement}).self(($route) => {
-            if (this.#builder) $route.builder(this.#builder as any).render({params: options.params as any, query: options.query as any})
-        })
+        return new $Page(this).render({params: options.params as any, query: options.query as any})
     }
 }
+
+export type $RouteBuilder<_$Route extends $Route, Path extends null | $RoutePathType, Params, Query> = (record: $RouteRecord<Path, Params, Query>) => $Page<_$Route, Path, Params, Query>;
+
 
 export interface $RouteRecord<Path extends null | $RoutePathType, Params, Query> {
-    $route: $Route<Path, Params, Query>;
-    params: Params
-    query: Query
+    $page: $Page<$Route<Path, Params, Query>, Path, Params, Query>;
+    params: Params;
+    query: Query;
 }
-export interface $RouteEventMap<Path extends null | $RoutePathType = null, Params = any, Query = any> extends $ContainerEventMap {
-    rendered: [$RouteRecord<Path, Params, Query>];
-    beforeShift: [{$route: $Route}];
-    afterShift: [{$route: $Route}];
-    open: [$RouteRecord<Path, Params, Query>];
-    close: [{$route: $Route}];
-}
+
 export type $RoutePathType = string | string[];
 type PathParams<Path> = Path extends `${infer Segment}/${infer Rest}`
     ? Segment extends `${string}:${infer Param}` 

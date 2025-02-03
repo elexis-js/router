@@ -29,4 +29,5 @@ Object.assign($, {
 
 export * from './lib/$Route';
 export * from './lib/$Router';
+export * from './lib/$Page';
 export * from './lib/$RouterAnchor';
