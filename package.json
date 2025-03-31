@@ -1,7 +1,7 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",
@@ -21,6 +21,6 @@
   "type": "module",
   "peerDependencies": {
     "@elexis.js/view": "^0.2.1",
-    "elexis": "^0.4.1"
+    "elexis": "^1.0.0"
   }
 }

@@ -8,7 +8,7 @@ declare module 'elexis' {
         export interface TagNameElementMap {
             'router': typeof $Router;
             'route': typeof $Route;
-            'router-a': typeof $RouterAnchor;
+            'ra': typeof $RouterAnchor;
         } 
         export function open(path: string | URL | undefined, target?: $AnchorTarget): typeof $Router;
         export function replace(path: string | URL | undefined): typeof $Router;
@@ -18,7 +18,7 @@ declare module 'elexis' {
 }
 $.registerTagName('router', $Router);
 $.registerTagName('route', $Route);
-$.registerTagName('router-a', $RouterAnchor);
+$.registerTagName('ra', $RouterAnchor);
 
 Object.assign($, {
     open(path: string | URL | undefined, target?: $AnchorTarget) { return $Router.open(path, target) },

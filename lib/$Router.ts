@@ -80,19 +80,19 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
             const {$route, params, pathId, query} = $routeData;
             if ($route.static() && pathId === this.contentId) return resolve($RouterResolveResult.OK); // current route
             this.events.once('rendered', ({nextContent, previousContent}) => {
-                previousContent?.events.fire('afterShift', {$page: previousContent});
-                nextContent.events.fire('rendered', {$page: nextContent, params, query});
+                previousContent?.events.fire('afterShift', previousContent);
+                nextContent.events.fire('rendered', nextContent);
                 resolve($RouterResolveResult.OK);
             });
             const $page = this.viewCache.get(pathId) as $Page ?? $route.build({params, query});
             if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
             this.events.once('beforeSwitch', () => {
-                $page.events.fire('beforeShift', {$page});
-                this.currentContent?.events.fire('beforeShift', {$page: this.currentContent});
+                $page.events.fire('beforeShift', $page);
+                this.currentContent?.events.fire('beforeShift', this.currentContent);
             })
-            this.events.once('afterSwitch', () => $page.events.fire('afterShift', {$page}));
-            this.currentContent?.events.fire('close', {$page: this.currentContent});
-            $page.events.fire('open', {$page: $page, params, query});
+            this.events.once('afterSwitch', () => $page.events.fire('afterShift', $page));
+            this.currentContent?.events.fire('close', this.currentContent);
+            $page.events.fire('open', $page);
             this.switchView(pathId);
         })
     }

@@ -1,4 +1,4 @@
-import { $Container, $ContainerOptions } from "elexis";
+import { $Container, $ContainerContentGroup, $ContainerOptions } from "elexis";
 import { $Page } from "./$Page";
 
 export interface $RouteOptions extends $ContainerOptions {}
@@ -28,18 +28,11 @@ export class $Route<Path extends null | $RoutePathType = null, Params = any, Que
     }
 
     build(options: {params: Params, query: Query}) {
-        return new $Page(this).render({params: options.params as any, query: options.query as any})
+        return new $Page(this, options.params, options.query).render()
     }
 }
 
-export type $RouteBuilder<_$Route extends $Route, Path extends null | $RoutePathType, Params, Query> = (record: $RouteRecord<Path, Params, Query>) => OrPromise<$Page<_$Route, Path, Params, Query>>;
-
-
-export interface $RouteRecord<Path extends null | $RoutePathType, Params, Query> {
-    $page: $Page<$Route<Path, Params, Query>, Path, Params, Query>;
-    params: Params;
-    query: Query;
-}
+export type $RouteBuilder<$$Route extends $Route, Path extends null | $RoutePathType, Params, Query> = ($page: $Page<$$Route, Path, Params, Query>) => OrPromise<$Page<$$Route, Path, Params, Query> | $ContainerContentGroup>;
 
 export type $RoutePathType = string | string[];
 type PathParams<Path> = Path extends `${infer Segment}/${infer Rest}`

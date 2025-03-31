@@ -4,6 +4,7 @@
 ## 初步认识 $Router 以及 $Route
 这个工具基于两个基本的概念模块来构建：解析模块以及蓝图模块。我们先来看看如何利用此工具实现一个简单的网页路径布局：
 ```ts
+// import in main entry file
 import 'elexis';
 import '@elexis.js/router';
 
@@ -13,13 +14,19 @@ $(document.body).content([
         // Root page
         $('route').path('/').builder(() => [
             $('h1').content('Hello, World!'),
-            $('a').content('Home').href('/home')
+            $('a').content('About').href('/about'),
+            $('a').content('Contact').href('/contact')
         ]),
 
         // Home page
-        $('route').path('/home').builder(() => [
-            $('h1').content('Hello, Home!'),
-        ])
+        $('route').path('/about').builder(() => $('h1').content('About Me')),
+
+        // Contact page
+        $('route').path('/contact').builder($page => {
+            return $page.id('contact').content([
+                $('h1').content('Contact Me')
+            ])
+        })
     ])
 ])
 ```
@@ -46,7 +53,7 @@ $('button').content('Open Home Page').on('click', () => $.open('/home'))
 $.anchorHandler = ($a) => $.open($a.href());
 ```
 
-## 路径参数
+## 路径参数以及查询
 在规划路径时，你可以在路径中的某一段设置变量，并且可以直接在构建内容时获取该变量对应在路径中的值：
 ```ts
 $(document.body).content([
@@ -54,14 +61,14 @@ $(document.body).content([
         // Root page
         $('route').path('/').builder(() => [
             $('h1').content('Hello, World!'),
-            $('a').content('Elexis').href('/Elexis/greating')
+            $('a').content('Greating').href('/Elexis/talk?hi=true'),
+            $('a').content('Goodbye').href('/Elexis/talk?hi=false')
         ]),
 
         // Greating page
-        $('route').path('/:name/greating').builder(({params}) => [
-            $('h1').content(`Hello, ${params.name}!`),
-        ])
-    ])
+        $('route').path('/:name/talk?hi').builder(({params, query}) => 
+        query.hi === 'true' ? $('h1').content(`Hello, ${params.name}!`) : $('h1').content(`Goodbye, ${params.name}!`) 
+    )])
 ])
 ```
 
