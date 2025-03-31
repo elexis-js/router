@@ -32,7 +32,7 @@ export class $Route<Path extends null | $RoutePathType = null, Params = any, Que
     }
 }
 
-export type $RouteBuilder<_$Route extends $Route, Path extends null | $RoutePathType, Params, Query> = (record: $RouteRecord<Path, Params, Query>) => $Page<_$Route, Path, Params, Query>;
+export type $RouteBuilder<_$Route extends $Route, Path extends null | $RoutePathType, Params, Query> = (record: $RouteRecord<Path, Params, Query>) => OrPromise<$Page<_$Route, Path, Params, Query>>;
 
 
 export interface $RouteRecord<Path extends null | $RoutePathType, Params, Query> {

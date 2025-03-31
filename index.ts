@@ -1,7 +1,7 @@
 import 'elexis';
 import { $Router } from './lib/$Router';
 import { $Route } from './lib/$Route';
-import { $AnchorTarget } from 'elexis';
+import type { $AnchorTarget } from 'elexis';
 import { $RouterAnchor } from './lib/$RouterAnchor';
 declare module 'elexis' {
     export namespace $ {
