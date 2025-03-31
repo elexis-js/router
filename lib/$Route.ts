@@ -1,23 +1,29 @@
-import { $Container, $ContainerContentGroup, $ContainerOptions } from "elexis";
+import { $ContainerContentGroup, $Element, $ElementOptions } from "elexis";
 import { $Page } from "./$Page";
 
-export interface $RouteOptions extends $ContainerOptions {}
-export class $Route<Path extends null | $RoutePathType = null, Params = any, Query = any> extends $Container<HTMLElement> {
+export interface $RouteOptions extends $ElementOptions {}
+export class $Route<Path extends null | $RoutePathType = null, Params = any, Query = any> extends $Element {
     #path: $RoutePathType = '';
     #builder?: $RouteBuilder<this, Path, Params, Query>;
     readonly rendered: boolean = false;
+    protected property = {
+        static: true
+    }
     constructor(options?: $RouteOptions) {
-        super('route', options);
-        this.__$property__.static = true;
+        super('route', options)
     }
 
     path(): $RoutePathType;
     path<P extends $RoutePathType>(pathname: P): $Route<P, P extends string ? PathParams<P> : {}, P extends string ? PathQuery<P> : {}>;
     path(pathname?: $RoutePathType): $RoutePathType | $Route<any, any> { return $.fluent(this, arguments, () => this.#path, () => this.#path = pathname ?? this.#path ) }
 
+    /**
+     * Same pathname with different query will build different $Page, set to `false` change to build same $Page.
+     * @default true
+     */
     static(): boolean;
     static(boolean: boolean): this;
-    static(boolean?: boolean) { return $.fluent(this, arguments, () => this.__$property__.static, () => $.set(this.__$property__, 'static', boolean)) }
+    static(boolean?: boolean) { return $.fluent(this, arguments, () => this.property.static, () => $.set(this.property, 'static', boolean)) }
 
     builder(): $RouteBuilder<this, Path, Params, Query> | undefined;
     builder(builder?: $RouteBuilder<this, Path, Params, Query>): this;
