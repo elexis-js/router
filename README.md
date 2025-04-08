@@ -1,5 +1,5 @@
 # @elexis/router
-一个基于 [ElexisJS](https://github.com/defaultkavy-dev/elexis) 的布局网页路由工具。
+一个基于 [ElexisJS](https://github.com/defaultkavy/elexis) 的布局网页路由工具。
 
 ## 初步认识 $Router 以及 $Route
 这个工具基于两个基本的概念模块来构建：解析模块以及蓝图模块。我们先来看看如何利用此工具实现一个简单的网页路径布局：

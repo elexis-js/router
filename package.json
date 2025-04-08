@@ -1,11 +1,11 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",
-    "url": "https://git.defaultkavy.com/defaultkavy"
+    "url": "https://github.com/defaultkavy"
   },
   "repository": {
     "type": "git",
