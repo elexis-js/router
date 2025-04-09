@@ -85,6 +85,8 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                 resolve($RouterResolveResult.OK);
             });
             const $page = this.viewCache.get(pathId) as $Page ?? $route.build({params, query});
+            $page.params = params;
+            $page.query = query;
             if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
             this.events.once('beforeSwitch', () => {
                 $page.events.fire('beforeShift', $page);

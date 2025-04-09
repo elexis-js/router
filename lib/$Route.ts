@@ -6,7 +6,7 @@ export class $Route<Path extends null | $RoutePathType = null, Params = any, Que
     #path: $RoutePathType = '';
     #builder?: $RouteBuilder<this, Path, Params, Query>;
     readonly rendered: boolean = false;
-    protected property = {
+    options = {
         static: true
     }
     constructor(options?: $RouteOptions) {
@@ -18,12 +18,12 @@ export class $Route<Path extends null | $RoutePathType = null, Params = any, Que
     path(pathname?: $RoutePathType): $RoutePathType | $Route<any, any> { return $.fluent(this, arguments, () => this.#path, () => this.#path = pathname ?? this.#path ) }
 
     /**
-     * Same pathname with different query will build different $Page, set to `false` change to build same $Page.
-     * @default true
+     * If set as false, URLs that meet the path conditions will use the same {@link $Page} object
+     * @defaultValue `true`
      */
     static(): boolean;
     static(boolean: boolean): this;
-    static(boolean?: boolean) { return $.fluent(this, arguments, () => this.property.static, () => $.set(this.property, 'static', boolean)) }
+    static(boolean?: boolean) { return $.fluent(this, arguments, () => this.options.static, () => $.set(this.options, 'static', boolean)) }
 
     builder(): $RouteBuilder<this, Path, Params, Query> | undefined;
     builder(builder?: $RouteBuilder<this, Path, Params, Query>): this;
