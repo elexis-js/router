@@ -1,8 +1,8 @@
 import 'elexis';
-import { $Router } from './lib/$Router';
-import { $Route } from './lib/$Route';
+import { $Router } from './src/component/$Router';
+import { $Route } from './src/component/$Route';
 import type { $AnchorTarget } from 'elexis';
-import { $RouterAnchor } from './lib/$RouterAnchor';
+import { $RouterAnchor } from './src/component/$RouterAnchor';
 declare module 'elexis' {
     export namespace $ {
         export interface TagNameElementMap {
@@ -27,7 +27,7 @@ Object.assign($, {
     forward() { return $Router.forward() }
 })
 
-export * from './lib/$Route';
-export * from './lib/$Router';
-export * from './lib/$Page';
-export * from './lib/$RouterAnchor';
+export * from './src/component/$Route';
+export * from './src/component/$Router';
+export * from './src/component/$Page';
+export * from './src/component/$RouterAnchor';

@@ -28,7 +28,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
         for (const route of routes) {
             if (route instanceof Array) this.map(route);
             else {
-                this.routes.set(route.path(), route);
+                this.routes.set(route.path(), route as any);
             }
         }
         this.resolve();
