@@ -4,7 +4,7 @@ import type { $Router } from "./$Router";
 
 export interface $RouteOptions extends $ElementOptions {}
 export class $Route<Path extends $RoutePathType | null = null, Params = any, Query = any> extends $Element {
-    #path: Path = null as Path;
+    #path: Path | $RoutePathHandler = null as Path;
     #builder?: $RouteBuilder<Path, Params, Query>;
     readonly rendered: boolean = false;
     options = {
@@ -30,9 +30,12 @@ export class $Route<Path extends $RoutePathType | null = null, Params = any, Que
      *      $('route').path('/greating?firstname&lastname').builder(({$page, query}) => $('p').content(`Hi! ${query.firstname} ${query.lastname}!`));
      * ])
      */
-    path(): $RoutePathType;
+    path(): $RoutePathType | $RoutePathHandler;
+    path<F extends $RoutePathHandler, R extends $RoutePathHandlerResolve<ReturnType<F>>>(resolver: F): $Route<any, R['params'], R['query']>
     path<P extends $RoutePathType>(pathname: P): $Route<P, P extends string ? PathParams<P> : {}, P extends string ? PathQuery<P> : {}>;
-    path(pathname?: $RoutePathType): $RoutePathType | $Route<any, any> { return $.fluent(this, arguments, () => this.#path as any, () => this.#path = pathname as Path ?? this.#path) }
+    path(resolver?: $RoutePathType | $RoutePathHandler): $RoutePathType | $Route<any, any, any> | $RoutePathHandler { return $.fluent(this, arguments, () => this.#path as any, () => {
+        this.#path = resolver as Path ?? this.#path
+    }) }
 
     /**
      * If set as false, URLs that meet the path conditions will use the same {@link $Page} object
@@ -50,8 +53,8 @@ export class $Route<Path extends $RoutePathType | null = null, Params = any, Que
         return this;
     }
 
-    build(options: {params: Params, query: Query}) {
-        return new $Page<any>(this, options.params, options.query).render()
+    async build(options: {params: Params, query: Query}) {
+        return await new $Page<any>(this, options.params, options.query).render()
     }
 
     /**
@@ -86,8 +89,8 @@ export type $RouteBuilder<
     Params, 
     Query
 > = ($page: $Page<$Route<any, Params, Query>, Path, Params, Query>) => OrPromise<$Page<$Route<any, Params, Query>, Path, Params, Query> | $ContainerContentGroup>;
-
-export type $RoutePathType = `/${string}` | `/${string}`[];
+export type $RoutePathString = `/${string}` | `#${string}`;
+export type $RoutePathType = $RoutePathString | $RoutePathString[];
 type PathParams<Path> = Path extends `${infer Segment}/${infer Rest}`
     ? Segment extends `${string}:${infer Param}` 
         ? Record<Param, string> & PathParams<Rest> 
@@ -107,3 +110,13 @@ type PathQuery<Path> = Path extends `${string}?${infer Segment}`
 type PathQuery_SetRecord<Segment extends string> = Segment extends `${infer Param}&${infer Rest}` 
     ? Record<Param, string> & PathQuery<`&${Rest}`>
     : Record<Segment, string>
+
+type $RoutePathHandlerResponse = { 
+    params?: { [key: string]: string },
+    query?: { [key: string]: string }
+}
+export type $RoutePathHandler = (path: string) => ($RoutePathHandlerResponse | undefined | false);
+
+type $RoutePathHandlerResolve<R extends ReturnType<$RoutePathHandler>> = R extends $RoutePathHandlerResponse
+    ? { params: Exclude<R['params'], undefined>, query: Exclude<R['query'], undefined> }
+    : never

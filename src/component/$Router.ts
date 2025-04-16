@@ -1,12 +1,12 @@
 import { $AnchorTarget, $EventManager } from "elexis";
-import { $Route, $RoutePathType } from "./$Route";
+import { $Route, $RoutePathHandler, $RoutePathType } from "./$Route";
 import { $View, $ViewEventMap, $ViewOptions } from "@elexis.js/view";
 import { $Page } from "./$Page";
 
 export interface $RouterOptions extends $ViewOptions {}
 export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View<$Page, EM> {
     #base: string = '';
-    routes = new Map<$RoutePathType, $Route>();
+    routes = new Map<$RoutePathType | $RoutePathHandler, $Route>();
     static routers = new Set<$Router>();
     static events = new $EventManager<$RouterEventMap>();
     static navigationDirection: $RouterNavigationDirection;
@@ -39,40 +39,50 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
         return new Promise(resolve => {
             if (!location.pathname.startsWith(this.#base)) return resolve($RouterResolveResult.NotMatchBase);
             const locationPath = location.pathname.replace(this.#base, '/').replace('//', '/') // /a/b
-            const locationPathParts = locationPath.split('/').map(path => `/${path}`);
+            const locationPathParts = locationPath === '/' ? ['/'] : ['/', ...locationPath.replace(/^\//, '').split('/').map(path => `${path}`)];
+            if (location.hash) locationPathParts.push(location.hash)
             const locationQuery = location.search;
             const locationQueryMap = new Map(locationQuery.replace('?', '').split('&').map(query => query.split('=') as [string, string | undefined]));
-            const find = () => {
-                const matchedRoutes: {deep: number, $route: $Route, routePath: string, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string}[] = []
+            interface RouteData {$route: $Route, routePath: string | $RoutePathHandler, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string | $RoutePathHandler}
+            const find = (): RouteData => {
+                const matchedRoutes: (RouteData & {deep: number})[] = []
                 for (const [routePathResolve, $route] of this.routes) {
                     const routePathList = $.orArrayResolve(routePathResolve);
                     for (const routePath of routePathList) {
                         let deep = 0, params = {}, query = {};
-                        const routeParts = routePath.split('/').map(path => `/${path}`)
-                        if (locationPathParts.length < routeParts.length) continue;
-                        for (let i = 0; i < routeParts.length; i ++) {
-                            const [routePathPart, routeQueries] = routeParts[i].split('?');
-                            // search query
-                            if (routeQueries) { routeQueries.split('&').forEach(routeQuery => {
-                                const locationQueryValue = locationQueryMap.get(routeQuery);
-                                if (locationQueryValue !== undefined) deep++;
-                                Object.assign(query, {[routeQuery]: locationQueryValue})
-                            })}
-                            // search params
-                            if (routePathPart.startsWith('/:')) { deep++; Object.assign(params, {[routePathPart.replace('/:', '')]: locationPathParts[i].replace('/', '')}); continue; }
-                            // match part of path
-                            else if (routePath.startsWith('#') && routePath === location.hash) { deep++; continue; }
-                            else if (routePathPart === locationPathParts[i]) { deep++; continue; }
-                            else { break; }
+                        if (routePath instanceof Function) {
+                            // path handler
+                            const data = routePath(locationPath);
+                            if (!data) continue;
+                            return {$route, params: data.params ?? {}, routePath, pathId: routePath, query: data.query ?? {}}
+                        } else {
+                            const routeParts = routePath === '/' ? ['/'] : ['/', ...routePath.replace(/^\//, '').split('/').map(path => `${path}`)];
+                            if (locationPathParts.length < routeParts.length) continue;
+                            for (let i = 0; i < routeParts.length; i ++) {
+                                const [routePathPart, routeQueries] = routeParts[i].split('?');
+                                // search query
+                                if (routeQueries) { routeQueries.split('&').forEach(routeQuery => {
+                                    const locationQueryValue = locationQueryMap.get(routeQuery);
+                                    if (locationQueryValue !== undefined) deep++;
+                                    Object.assign(query, {[routeQuery]: locationQueryValue})
+                                })}
+                                // search params
+                                if (routePathPart.startsWith(':')) { deep++; Object.assign(params, {[routePathPart.replace(':', '')]: locationPathParts[i]}); continue; }
+                                // match hash part
+                                else if (routePath.startsWith('#') && routePath === location.hash) { deep++; continue; }
+                                // match path
+                                else if (routePathPart === locationPathParts[i]) { deep++; continue; }
+                                else { break; }
+                            }
+                            matchedRoutes.push({
+                                deep, $route, params, query, routePath,
+                                // route path with params will set the locationPath as pathId, with query will set locationPath + locationQuery as pathId
+                                pathId: !$route.static() ? routePathList[0] : Object.keys(query).length !== 0 ? locationPath + locationQuery : Object.keys(params).length !== 0 ? locationPath : routePathList[0]
+                            })
                         }
-                        matchedRoutes.push({
-                            deep, $route, params, query, routePath,
-                            // route path with params will set the locationPath as pathId, with query will set locationPath + locationQuery as pathId
-                            pathId: !$route.static() ? routePathList[0] : Object.keys(query).length !== 0 ? locationPath + locationQuery : Object.keys(params).length !== 0 ? locationPath : routePathList[0]
-                        })
                     }
                 }
-                return matchedRoutes.sort((a, b) => b.deep - a.deep).at(0);
+                return matchedRoutes.sort((a, b) => b.deep - a.deep).at(0)!;
             }
     
             const $routeData = find();
@@ -84,18 +94,23 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                 nextContent.events.fire('rendered', nextContent);
                 resolve($RouterResolveResult.OK);
             });
-            const $page = this.viewCache.get(pathId) as $Page ?? $route.build({params, query});
-            $page.params = params;
-            $page.query = query;
-            if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
-            this.events.once('beforeSwitch', () => {
-                $page.events.fire('beforeShift', $page);
-                this.currentContent?.events.fire('beforeShift', this.currentContent);
-            })
-            this.events.once('afterSwitch', () => $page.events.fire('afterShift', $page));
-            this.currentContent?.events.fire('close', this.currentContent);
-            $page.events.fire('open', $page);
-            this.switchView(pathId);
+            const $page = this.viewCache.get(pathId) ?? $route.build({params, query});
+            if ($page instanceof Promise) $page.then(handlePage.bind(this));
+            else handlePage.bind(this)($page)
+            
+            function handlePage(this: $Router, $page: $Page) {
+                $page.params = params;
+                $page.query = query;
+                if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
+                this.events.once('beforeSwitch', () => {
+                    $page.events.fire('beforeShift', $page);
+                    this.currentContent?.events.fire('beforeShift', this.currentContent);
+                })
+                this.events.once('afterSwitch', () => $page.events.fire('afterShift', $page));
+                this.currentContent?.events.fire('close', this.currentContent);
+                $page.events.fire('open', $page);
+                this.switchView(pathId);
+            }
         })
     }
 

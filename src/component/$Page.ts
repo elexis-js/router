@@ -20,10 +20,10 @@ export class $Page <
         this.query = query;
     }
 
-    render() {
+    async render() {
         const builder = this.$route.builder();
         if (builder) {
-            const result = builder(this);
+            const result = await builder(this);
             if (result instanceof Promise) result.then($element => $element === this ? undefined : this.content($element));
             else result === this ? undefined : this.content(result)
         }
