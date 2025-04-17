@@ -12,12 +12,16 @@ export class $Page <
     $route: _$Route;
     params: Params;
     query: Query;
+    base: string;
     $page = this;
-    constructor($route: _$Route, params: Params, query: Query) {
+    pathId: string;
+    constructor($route: _$Route, params: Params, query: Query, pathId: string, base: string) {
         super('page');
         this.$route = $route;
         this.params = params;
         this.query = query;
+        this.base = base;
+        this.pathId = pathId;
     }
 
     async render() {

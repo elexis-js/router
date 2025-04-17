@@ -53,8 +53,8 @@ export class $Route<Path extends $RoutePathType | null = null, Params = any, Que
         return this;
     }
 
-    async build(options: {params: Params, query: Query}) {
-        return await new $Page<any>(this, options.params, options.query).render()
+    async build(options: {params: Params, query: Query, base: string, pathId: string}) {
+        return await new $Page<any>(this, options.params, options.query, options.pathId, options.base).render()
     }
 
     /**
@@ -112,6 +112,7 @@ type PathQuery_SetRecord<Segment extends string> = Segment extends `${infer Para
     : Record<Segment, string>
 
 type $RoutePathHandlerResponse = { 
+    pathId: string, 
     params?: { [key: string]: string },
     query?: { [key: string]: string }
 }

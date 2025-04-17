@@ -5,7 +5,7 @@ export class $RouterAnchor extends $Anchor {
     constructor(options?: $RouterAnchorOptions) {
         super(options);
         Object.assign(this.__$property__, {preventDefault: false})
-        this.on('click', (e) => { e.preventDefault(); if (!this.__$property__.preventDefault) $.open(this.href(), this.target())})
+        this.on('click', (e) => { if (!this.href()) return; e.preventDefault(); if (!this.__$property__.preventDefault) $.open(this.href(), this.target())})
     }
 
     preventDefault(): boolean;

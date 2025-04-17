@@ -4,10 +4,10 @@ import { $View, $ViewEventMap, $ViewOptions } from "@elexis.js/view";
 import { $Page } from "./$Page";
 
 export interface $RouterOptions extends $ViewOptions {}
-export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View<$Page, EM> {
+export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> extends $View<$Page, EM> {
     #base: string = '';
     routes = new Map<$RoutePathType | $RoutePathHandler, $Route>();
-    static routers = new Set<$Router>();
+    static routers = new Map<string, $Router>();
     static events = new $EventManager<$RouterEventMap>();
     static navigationDirection: $RouterNavigationDirection;
     static index = 0;
@@ -16,12 +16,14 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
     private static scrollHistoryKey = `$ROUTER_SCROLL_HISTORY`;
     constructor(options?: $RouterOptions) {
         super({tagname: 'router', ...options});
-        $Router.routers.add(this);
     }
 
     base(): string;
     base(pathname: string): this;
-    base(pathname?: string) { return $.fluent(this, arguments, () => this.#base, () => { this.#base = pathname ?? this.#base }) }
+    base(pathname?: string) { return $.fluent(this, arguments, () => this.#base, () => { 
+        this.#base = pathname ?? this.#base 
+        if (pathname) $Router.routers.set(this.#base, this);
+    }) }
 
     map(routes: OrMatrix<$Route<$RoutePathType, any, any>>) {
         routes = $.orArrayResolve(routes);
@@ -43,7 +45,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
             if (location.hash) locationPathParts.push(location.hash)
             const locationQuery = location.search;
             const locationQueryMap = new Map(locationQuery.replace('?', '').split('&').map(query => query.split('=') as [string, string | undefined]));
-            interface RouteData {$route: $Route, routePath: string | $RoutePathHandler, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string | $RoutePathHandler}
+            interface RouteData {$route: $Route, routePath: string | $RoutePathHandler, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string}
             const find = (): RouteData => {
                 const matchedRoutes: (RouteData & {deep: number})[] = []
                 for (const [routePathResolve, $route] of this.routes) {
@@ -54,7 +56,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                             // path handler
                             const data = routePath(locationPath);
                             if (!data) continue;
-                            return {$route, params: data.params ?? {}, routePath, pathId: routePath, query: data.query ?? {}}
+                            return {$route, params: data.params ?? {}, routePath, pathId: data.pathId, query: data.query ?? {}}
                         } else {
                             const routeParts = routePath === '/' ? ['/'] : ['/', ...routePath.replace(/^\//, '').split('/').map(path => `${path}`)];
                             if (locationPathParts.length < routeParts.length) continue;
@@ -77,7 +79,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                             matchedRoutes.push({
                                 deep, $route, params, query, routePath,
                                 // route path with params will set the locationPath as pathId, with query will set locationPath + locationQuery as pathId
-                                pathId: !$route.static() ? routePathList[0] : Object.keys(query).length !== 0 ? locationPath + locationQuery : Object.keys(params).length !== 0 ? locationPath : routePathList[0]
+                                pathId: !$route.static() ? routePathList[0] as string : Object.keys(query).length !== 0 ? locationPath + locationQuery : Object.keys(params).length !== 0 ? locationPath : routePathList[0] as string
                             })
                         }
                     }
@@ -94,7 +96,7 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                 nextContent.events.fire('rendered', nextContent);
                 resolve($RouterResolveResult.OK);
             });
-            const $page = this.viewCache.get(pathId) ?? $route.build({params, query});
+            const $page = this.viewCache.get(pathId) ?? $route.build({params, query, pathId: pathId, base: this.base()});
             if ($page instanceof Promise) $page.then(handlePage.bind(this));
             else handlePage.bind(this)($page)
             
@@ -107,7 +109,10 @@ export class $Router<EM extends $RouterEventMap = $RouterEventMap> extends $View
                     this.currentContent?.events.fire('beforeShift', this.currentContent);
                 })
                 this.events.once('afterSwitch', () => $page.events.fire('afterShift', $page));
-                this.currentContent?.events.fire('close', this.currentContent);
+                if (this.currentContent !== $page) this.currentContent?.events.fire('close', this.currentContent);
+                // handle current page child router events
+                this.currentContent?.children.iterate($node => $node instanceof $Page ? $node.events.fire('close', $node) && false : false)
+                $page?.children.iterate($node => $node instanceof $Page ? $node.events.fire('open', $node) && false : false)
                 $page.events.fire('open', $page);
                 this.switchView(pathId);
             }
