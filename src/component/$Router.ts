@@ -45,7 +45,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
             if (location.hash) locationPathParts.push(location.hash)
             const locationQuery = location.search;
             const locationQueryMap = new Map(locationQuery.replace('?', '').split('&').map(query => query.split('=') as [string, string | undefined]));
-            interface RouteData {$route: $Route, routePath: string | $RoutePathHandler, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string}
+            interface RouteData {$route: $Route, routePath: string | $RoutePathHandler, params: {[key: string]: string}, query: {[key: string]: string | undefined}, pathId: string, fullMatch: boolean}
             const find = (): RouteData => {
                 const matchedRoutes: (RouteData & {deep: number})[] = []
                 for (const [routePathResolve, $route] of this.routes) {
@@ -56,7 +56,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
                             // path handler
                             const data = routePath(locationPath);
                             if (!data) continue;
-                            return {$route, params: data.params ?? {}, routePath, pathId: data.pathId, query: data.query ?? {}}
+                            return {$route, params: data.params ?? {}, routePath, pathId: data.pathId, query: data.query ?? {}, fullMatch: true}
                         } else {
                             const routeParts = routePath === '/' ? ['/'] : ['/', ...routePath.replace(/^\//, '').split('/').map(path => `${path}`)];
                             if (locationPathParts.length < routeParts.length) continue;
@@ -77,7 +77,8 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
                                 else { break; }
                             }
                             matchedRoutes.push({
-                                deep, $route, params, query, routePath,
+                                deep, $route, params, query, routePath, 
+                                fullMatch: routeParts.length === locationPathParts.length,
                                 // route path with params will set the locationPath as pathId, with query will set locationPath + locationQuery as pathId
                                 pathId: !$route.static() ? routePathList[0] as string : Object.keys(query).length !== 0 ? locationPath + locationQuery : Object.keys(params).length !== 0 ? locationPath : routePathList[0] as string
                             })
@@ -101,6 +102,10 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
             else handlePage.bind(this)($page)
             
             function handlePage(this: $Router, $page: $Page) {
+                // result
+                if ($routeData.fullMatch) resolve($RouterResolveResult.OK);
+                else if ($page.children.iterate($node => $node instanceof $Router)) resolve($RouterResolveResult.OK);
+                else return resolve($RouterResolveResult.NotFound);
                 $page.params = params;
                 $page.query = query;
                 if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
@@ -175,7 +180,8 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     protected static urlResolver(url: URL | string) {
         if (url instanceof URL) return url;
         if (url.startsWith('/')) { url = `${location.origin}${url}`; }
-        if (url.startsWith('#')) { url = `${location.origin}${location.pathname}${url}`}
+        else if (url.startsWith('#')) { url = `${location.origin}${location.pathname}${location.search}${url}`}
+        else if (url.startsWith('?')) { url = `${location.origin}${location.pathname}${url}${location.hash}`}
         return new URL(url)
     }
 
@@ -194,7 +200,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     }
 
     protected static async resolve() {
-        await Promise.all([...$Router.routers.values()].map($router => $router.resolve()));
+        const result = await Promise.all([...$Router.routers.values()].map($router => $router.resolve()));
         this.scrollRestoration();
         this.setScrollHistory(this.index, location.href, document.documentElement.scrollTop);
     }
@@ -242,7 +248,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     }
 }
 
-enum $RouterResolveResult { OK, NotFound, NotMatchBase }
+enum $RouterResolveResult { OK = 200, NotFound = 404, NotMatchBase = 400 }
 export enum $RouterNavigationDirection { Forward, Back, Replace }
 interface $RouterState { index: number }
 export interface $RouterEventMap extends $ViewEventMap<$Page> {
