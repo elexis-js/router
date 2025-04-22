@@ -102,10 +102,8 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
             else handlePage.bind(this)($page)
             
             function handlePage(this: $Router, $page: $Page) {
-                // result
-                if ($routeData.fullMatch) resolve($RouterResolveResult.OK);
-                else if ($page.children.iterate($node => $node instanceof $Router)) resolve($RouterResolveResult.OK);
-                else return resolve($RouterResolveResult.NotFound);
+                // path not full match and $page have not $Router child
+                if (!$routeData.fullMatch && !$page.children.iterate($node => $node instanceof $Router)) return resolve($RouterResolveResult.NotFound);
                 $page.params = params;
                 $page.query = query;
                 if (!this.viewCache.has(pathId)) { this.setView(pathId, $page); }
