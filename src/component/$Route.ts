@@ -1,4 +1,4 @@
-import { $ContainerContentGroup, $Element, $ElementOptions } from "elexis";
+import { type $ContainerContentGroup, $Element, type $ElementOptions } from "elexis";
 import { $Page } from "./$Page";
 import type { $Router } from "./$Router";
 

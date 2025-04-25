@@ -1,4 +1,4 @@
-import { $Anchor, $AnchorOptions, $StateArgument } from "elexis";
+import { $Anchor, type $AnchorOptions, type $StateArgument } from "elexis";
 
 export interface $RouterAnchorOptions extends $AnchorOptions{}
 export class $RouterAnchor extends $Anchor {

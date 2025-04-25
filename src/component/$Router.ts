@@ -1,6 +1,6 @@
-import { $AnchorTarget, $EventManager } from "elexis";
-import { $Route, $RoutePathHandler, $RoutePathType } from "./$Route";
-import { $View, $ViewEventMap, $ViewOptions } from "@elexis.js/view";
+import { type $AnchorTarget, $EventManager } from "elexis";
+import { $Route, type $RoutePathHandler, type $RoutePathType } from "./$Route";
+import { $View, type $ViewEventMap, type $ViewOptions } from "@elexis.js/view";
 import { $Page } from "./$Page";
 
 export interface $RouterOptions extends $ViewOptions {}

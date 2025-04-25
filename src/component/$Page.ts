@@ -1,5 +1,5 @@
-import { $Container, $ContainerEventMap } from "elexis";
-import { $Route, $RoutePathType } from "./$Route";
+import { $Container, type $ContainerEventMap } from "elexis";
+import { $Route, type $RoutePathType } from "./$Route";
 
 export class $Page <
     _$Route extends $Route = $Route, 
