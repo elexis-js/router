@@ -1,9 +1,9 @@
-import 'elexis';
+import 'elexis/core';
 import { $Router } from './src/component/$Router';
 import { $Route } from './src/component/$Route';
-import type { $AnchorTarget } from 'elexis';
 import { $RouterAnchor } from './src/component/$RouterAnchor';
-declare module 'elexis' {
+import type { $AnchorTarget } from 'elexis/src/node/$Anchor';
+declare module 'elexis/core' {
     export namespace $ {
         export interface TagNameElementMap {
             'router': typeof $Router;

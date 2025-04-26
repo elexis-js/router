@@ -1,4 +1,4 @@
-import { $Container, type $ContainerEventMap } from "elexis";
+import { type $ContainerEventMap, $Container } from "elexis/src/node/$Container";
 import { $Route, type $RoutePathType } from "./$Route";
 
 export class $Page <

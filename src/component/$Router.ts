@@ -1,7 +1,9 @@
-import { type $AnchorTarget, $EventManager } from "elexis";
 import { $Route, type $RoutePathHandler, type $RoutePathType } from "./$Route";
 import { $View, type $ViewEventMap, type $ViewOptions } from "@elexis.js/view";
 import { $Page } from "./$Page";
+import type { $AnchorTarget } from "elexis/src/node/$Anchor";
+import { $HTMLElement } from "elexis/src/node/$HTMLElement";
+import { $EventManager } from "elexis/src/structure/$EventManager";
 
 export interface $RouterOptions extends $ViewOptions {}
 export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> extends $View<$Page, EM> {
@@ -239,7 +241,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
         if (record && record[this.index]) document.documentElement.scrollTop = record[this.index].value ?? 0;
         else if (location.hash.length) {
             const $target = $(document.body).$(`:${location.hash}`);
-            if ($target) document.documentElement.scrollTop = $target.dom.offsetTop;
+            if ($target instanceof $HTMLElement) document.documentElement.scrollTop = $target.dom.offsetTop;
         } else {
             document.documentElement.scrollTop = 0;
         }
