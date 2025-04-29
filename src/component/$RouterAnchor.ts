@@ -4,7 +4,7 @@ import { $Router } from "./$Router";
 
 export interface $RouterAnchorOptions extends $AnchorOptions{}
 export class $RouterAnchor extends $Anchor {
-    constructor(options?: $RouterAnchorOptions) {
+    constructor(options?: Partial<$RouterAnchorOptions>) {
         super(options);
         Object.assign(this.$data, {preventDefault: false})
         this.on('click', (e) => { if (!this.href()) return; e.preventDefault(); if (!this.$data.preventDefault) $Router.open(this.href(), this.target())})

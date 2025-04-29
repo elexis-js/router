@@ -10,7 +10,7 @@ export class $Route<Path extends $RoutePathType | null = null, Params = any, Que
     options = {
         static: true
     }
-    constructor(options?: $RouteOptions) {
+    constructor(options?: Partial<$RouteOptions>) {
         super('route', options)
     }
 

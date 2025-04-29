@@ -1,7 +1,7 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",

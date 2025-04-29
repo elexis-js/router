@@ -16,7 +16,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     static forwardIndex = 0;
     static url = new URL(location.href);
     private static scrollHistoryKey = `$ROUTER_SCROLL_HISTORY`;
-    constructor(options?: $RouterOptions) {
+    constructor(options?: Partial<$RouterOptions>) {
         super({tagname: 'router', ...options});
     }
 
@@ -144,7 +144,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
         url = this.urlResolver(url);
         if (url.href === this.url.href) return this;
         if (url.origin !== this.url.origin) {
-            window.open(url, target);
+            window.open(url, target ?? undefined);
             return this;
         }
         $Router.clearForwardScrollHistory();
