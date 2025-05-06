@@ -11,7 +11,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     routes = new Map<$RoutePathType | $RoutePathHandler, $Route>();
     static routers = new Map<string, $Router>();
     static events = new $EventManager<$RouterEventMap>();
-    static navigationDirection: $RouterNavigationDirection;
+    static navigation: $RouterNavigation;
     static index = 0;
     static forwardIndex = 0;
     static url = new URL(location.href);
@@ -131,7 +131,7 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
         } else {
             $Router.index = history.state.index
         }
-        $Router.navigationDirection = $RouterNavigationDirection.Forward;
+        $Router.navigation = $RouterNavigation.Reload;
         $Router.resolve();
         window.addEventListener('popstate', () => $Router.popstate());
         window.addEventListener('scroll', () => { this.setScrollHistory(this.index, location.href, document.documentElement.scrollTop) }, {passive: true})
@@ -149,9 +149,10 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
         }
         $Router.clearForwardScrollHistory();
         $Router.forwardIndex = 0;
+        $Router.navigation = $RouterNavigation.Forward;
         $Router.index++;
         history.pushState($Router.historyState, '', url);
-        $Router.stateChange($RouterNavigationDirection.Forward);
+        $Router.stateChange($RouterNavigation.Forward);
         $Router.resolve();
         return this;
     }
@@ -170,8 +171,9 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     static replace(url: string | URL | undefined) {
         if (url === undefined) return this;
         url = this.urlResolver(url);
+        if (url.href === this.url.href) return this;
         history.replaceState($Router.historyState, '', url);
-        this.stateChange($RouterNavigationDirection.Replace);
+        this.stateChange($RouterNavigation.Replace);
         this.setScrollHistory(this.index, location.href, 0);
         $Router.resolve();
         return this;
@@ -186,14 +188,14 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     }
 
     protected static popstate() {
-        const direction: $RouterNavigationDirection 
+        const direction: $RouterNavigation 
             = history.state.index > $Router.index 
-                ? $RouterNavigationDirection.Forward
+                ? $RouterNavigation.Forward
                 : history.state.index < $Router.index
-                ? $RouterNavigationDirection.Back
-                : $RouterNavigationDirection.Replace
-        if (direction === $RouterNavigationDirection.Forward) this.forwardIndex--;
-        else if (direction === $RouterNavigationDirection.Back) this.forwardIndex++
+                ? $RouterNavigation.Back
+                : $RouterNavigation.Replace
+        if (direction === $RouterNavigation.Forward) this.forwardIndex--;
+        else if (direction === $RouterNavigation.Back) this.forwardIndex++
         $Router.index = history.state.index;
         $Router.stateChange(direction);
         $Router.resolve();
@@ -207,12 +209,12 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
 
     protected static get historyState() { return { index: $Router.index, } }
 
-    protected static stateChange(direction: $RouterNavigationDirection) {
+    protected static stateChange(direction: $RouterNavigation) {
         const beforeURL = this.url;
         const afterURL = new URL(location.href);
         this.url = afterURL;
         $Router.events.fire('stateChange', {beforeURL, afterURL, direction})
-        $Router.navigationDirection = direction;
+        $Router.navigation = direction;
     }
 
     protected static setScrollHistory(index: number, url: string, value: number) {
@@ -238,21 +240,24 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
 
     protected static scrollRestoration() {
         const record = this.getScrollHistory();
-        if (record && record[this.index]) document.documentElement.scrollTop = record[this.index].value ?? 0;
+        const docEle = document.documentElement;
+        docEle.style.scrollBehavior = 'auto';
+        if (record && record[this.index]) docEle.scrollTop = record[this.index].value ?? 0;
         else if (location.hash.length) {
             const $target = $(document.body).$(`:${location.hash}`);
-            if ($target instanceof $HTMLElement) document.documentElement.scrollTop = $target.dom.offsetTop;
+            if ($target instanceof $HTMLElement) docEle.scrollTop = $target.dom.offsetTop;
         } else {
-            document.documentElement.scrollTop = 0;
+            docEle.scrollTop = 0;
         }
+        docEle.style.scrollBehavior = '';
     }
 }
 
 enum $RouterResolveResult { OK = 200, NotFound = 404, NotMatchBase = 400 }
-export enum $RouterNavigationDirection { Forward, Back, Replace }
+export enum $RouterNavigation { Reload, Forward, Back, Replace }
 interface $RouterState { index: number }
 export interface $RouterEventMap extends $ViewEventMap<$Page> {
-    'stateChange': [{beforeURL: URL, afterURL: URL, direction: $RouterNavigationDirection}]
+    'stateChange': [{beforeURL: URL, afterURL: URL, direction: $RouterNavigation}]
 }
 interface $RouterScrollHistoryData {[index: number]: {url: string, value: number}}
 
