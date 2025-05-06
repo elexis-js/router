@@ -1,7 +1,7 @@
 {
   "name": "@elexis.js/router",
   "description": "A simple router for ElexisJS",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": {
     "name": "defaultkavy",
     "email": "defaultkavy@gmail.com",
@@ -16,7 +16,14 @@
     "url": "https://github.com/elexis-js/router/issues"
   },
   "homepage": "https://github.com/elexis-js/router",
-  "keywords": ["router", "web", "front-end", "lib", "fluent", "framework"],
+  "keywords": [
+    "router",
+    "web",
+    "front-end",
+    "lib",
+    "fluent",
+    "framework"
+  ],
   "license": "ISC",
   "type": "module",
   "peerDependencies": {
