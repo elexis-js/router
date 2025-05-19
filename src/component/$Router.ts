@@ -1,9 +1,9 @@
-import { $Route, type $RoutePathHandler, type $RoutePathType } from "./$Route";
+import { $Route, type $RoutePathHandler, type $RoutePathType } from "#component/$Route";
 import { $View, type $ViewEventMap, type $ViewOptions } from "@elexis.js/view";
 import { $Page } from "./$Page";
-import type { $AnchorTarget } from "elexis/src/node/$Anchor";
-import { $HTMLElement } from "elexis/src/node/$HTMLElement";
-import { $EventManager } from "elexis/src/structure/$EventManager";
+import type { $AnchorTarget } from "elexis/node/$Anchor";
+import { $HTMLElement } from "elexis/node/$HTMLElement";
+import { $EventManager } from "elexis/structure/$EventManager";
 
 export interface $RouterOptions extends $ViewOptions {}
 export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> extends $View<$Page, EM> {
@@ -63,7 +63,8 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
                             const routeParts = routePath === '/' ? ['/'] : ['/', ...routePath.replace(/^\//, '').split('/').map(path => `${path}`)];
                             if (locationPathParts.length < routeParts.length) continue;
                             for (let i = 0; i < routeParts.length; i ++) {
-                                const [routePathPart, routeQueries] = routeParts[i].split('?');
+                                const [routePathPart, routeQueries] = routeParts[i]!.split('?');
+                                if (routePathPart === undefined) throw new Error()
                                 // search query
                                 if (routeQueries) { routeQueries.split('&').forEach(routeQuery => {
                                     const locationQueryValue = locationQueryMap.get(routeQuery);
@@ -239,10 +240,10 @@ export class $Router<EM extends $ViewEventMap<$Page> = $ViewEventMap<$Page>> ext
     }
 
     protected static scrollRestoration() {
-        const record = this.getScrollHistory();
+        const records = this.getScrollHistory();
         const docEle = document.documentElement;
         docEle.style.scrollBehavior = 'auto';
-        if (record && record[this.index]) docEle.scrollTop = record[this.index].value ?? 0;
+        if (records && this.index in records) docEle.scrollTop = records[this.index]!.value ?? 0;
         else if (location.hash.length) {
             const $target = $(document.body).$(`:${location.hash}`);
             if ($target instanceof $HTMLElement) docEle.scrollTop = $target.dom.offsetTop;

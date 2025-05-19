@@ -1,12 +1,15 @@
-import { $Anchor, type $AnchorOptions } from "elexis/src/node/$Anchor";
-import type { $StateArgument } from "elexis/src/structure/$State";
+import { $Anchor, type $AnchorOptions } from "elexis/node/$Anchor";
+import type { $StateArgument } from "elexis/structure/$State";
 import { $Router } from "./$Router";
 
 export interface $RouterAnchorOptions extends $AnchorOptions{}
 export class $RouterAnchor extends $Anchor {
+    declare protected $data: $Anchor['$data'] & {
+        preventDefault: boolean;
+    }
     constructor(options?: Partial<$RouterAnchorOptions>) {
         super(options);
-        Object.assign(this.$data, {preventDefault: false})
+        this.$data.preventDefault = false;
         this.on('click', (e) => { if (!this.href()) return; e.preventDefault(); if (!this.$data.preventDefault) $Router.open(this.href(), this.target())})
     }
 

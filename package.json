@@ -29,5 +29,16 @@
   "peerDependencies": {
     "elexis": "^2.0.0",
     "@elexis.js/view": "^2.0.0"
+  },
+  "imports": {
+    "#component/*": "./src/component/*.ts",
+    "#structure/*": "./src/structure/*.ts",
+    "#lib/*": "./src/lib/*.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./component/*": "./src/component/*.ts",
+    "./structure/*": "./src/structure/*.ts",
+    "./lib/*": "./src/lib/*.ts"
   }
 }

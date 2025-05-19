@@ -1,6 +1,7 @@
-import { type $ContainerContentGroup, $Element, type $ElementOptions } from "elexis";
+import { $Element, type $ElementOptions } from "elexis/node/$Element";
 import { $Page } from "./$Page";
 import type { $Router } from "./$Router";
+import type { $ContainerContentGroup } from "elexis/node/$Container";
 
 export interface $RouteOptions extends $ElementOptions {}
 export class $Route<Path extends $RoutePathType | null = null, Params = any, Query = any> extends $Element {
